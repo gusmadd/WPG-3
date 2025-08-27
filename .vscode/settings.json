@@ -51,5 +51,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Pink Rabbit Amusement Park.sln"
+    "dotnet.defaultSolution": "WPG-3.sln"
 }

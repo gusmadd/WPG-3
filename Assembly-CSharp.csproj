@@ -65,8 +65,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\script\TransparentOnPlayer.cs" />
+    <Compile Include="Assets\script\GameManager.cs" />
     <Compile Include="Assets\script\UIscript.cs" />
     <Compile Include="Assets\script\GuardianRabbit.cs" />
+    <Compile Include="Assets\script\Wahana.cs" />
     <Compile Include="Assets\script\CameraFollow.cs" />
     <Compile Include="Assets\script\PlayerControler.cs" />
   </ItemGroup>

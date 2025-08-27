@@ -357,10 +357,12 @@
 -analyzer:"C:/Program Files/Unity 2022.3.47f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.Properties.SourceGenerator.dll"
 -analyzer:"C:/Program Files/Unity 2022.3.47f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.SourceGenerators.dll"
 "Assets/script/CameraFollow.cs"
+"Assets/script/GameManager.cs"
 "Assets/script/GuardianRabbit.cs"
 "Assets/script/PlayerControler.cs"
 "Assets/script/TransparentOnPlayer.cs"
 "Assets/script/UIscript.cs"
+"Assets/script/Wahana.cs"
 -langversion:9.0
 /deterministic
 /optimize+

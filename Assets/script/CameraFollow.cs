@@ -10,18 +10,19 @@ public class CameraFollow : MonoBehaviour
     private Vector3 velocity = Vector3.zero;
     private Vector3 offset;
 
+    [Header("Tutorial Mode")]
+    public bool isActive = true;  // default: kamera diam saat tutorial
+
     void Start()
     {
-        // Simpan jarak awal kamera dengan player
         offset = transform.position - player.position;
     }
 
     void LateUpdate()
     {
-        // Posisi target = player + offset
-        Vector3 targetPosition = player.position + offset;
+        if (!isActive) return; // kalau tidak aktif, kamera diam
 
-        // Smooth follow
+        Vector3 targetPosition = player.position + offset;
         transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref velocity, smoothSpeed);
     }
 }
