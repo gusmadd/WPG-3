@@ -13,25 +13,21 @@ public class PlayerControler : MonoBehaviour
     public bool isIntro = true;
     public bool canMove = false;
     public bool hasTriedWahana = false;
-    public Camera mainCamera;          // ← TAMBAH (drag Camera di Inspector; kalau lupa akan auto Camera.main)
-    private bool everMoved = false;    // ← TAMBAH: untuk HasMoved()
-
+    public Camera mainCamera;
     private bool isNearWahana = false;
+    // 👇 Tambahin
+    private bool isAutoMoving = false;
 
     void Start()
     {
-        if (mainCamera == null) mainCamera = Camera.main; // ← TAMBAH
+        if (mainCamera == null) mainCamera = Camera.main;
 
         rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
 
-        // pastikan rigidbody tidak rotasi
         rb.constraints = RigidbodyConstraints.FreezeRotation;
-
-        // atur collision detection lebih teliti
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
-        // set default animasi ke bawah
         anim.SetFloat("MoveX", 0f);
         anim.SetFloat("MoveZ", -1f);
         anim.SetBool("isMoving", false);
@@ -39,49 +35,27 @@ public class PlayerControler : MonoBehaviour
         lastMoveX = 0f;
         lastMoveZ = -1f;
     }
+
     void Update()
     {
         if (isNearWahana && Input.GetKeyDown(KeyCode.E))
         {
-            hasTriedWahana = true;   // kasih tahu GameManager
+            hasTriedWahana = true;
             Debug.Log("Wahana dicoba!");
         }
-    }
-    private void OnTriggerEnter(Collider other)
-    {
-        Debug.Log("Masuk trigger dengan: " + other.name);
-
-    if (other.CompareTag("Wahana"))
-    {
-        isNearWahana = true;
-        Debug.Log("Dekat Wahana");
-    }
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        Debug.Log("Keluar trigger dengan: " + other.name);
-
-    if (other.CompareTag("Wahana"))
-    {
-        isNearWahana = false;
-        Debug.Log("Menjauh dari Wahana");
-    }
     }
 
     void FixedUpdate()
     {
+        if (isAutoMoving) return; // 👈 cegah input saat auto-move
         if (!canMove) return;
+
         float moveX = Input.GetAxis("Horizontal");
         float moveZ = Input.GetAxis("Vertical");
 
         Vector3 movement = new Vector3(moveX, 0f, moveZ).normalized;
-
-        // ini cara yang aman biar tidak tembus collider
         rb.MovePosition(rb.position + movement * moveSpeed * Time.fixedDeltaTime);
-        // tandai pernah bergerak
-        if (movement.sqrMagnitude > 0.0001f) everMoved = true;
-        // animasi
+
         bool isMoving = movement.magnitude > 0;
         anim.SetBool("isMoving", isMoving);
 
@@ -93,41 +67,41 @@ public class PlayerControler : MonoBehaviour
 
         anim.SetFloat("MoveX", isMoving ? moveX : lastMoveX);
         anim.SetFloat("MoveZ", isMoving ? moveZ : lastMoveZ);
-        // kunci dalam kamera selama intro
-        if (isIntro) ClampToCameraBounds();
-
     }
-    public bool HasMoved()
+
+    // === AUTO MOVE ===
+    public bool IsAutoMoving => isAutoMoving;
+
+    public void StartAutoMove(Vector3 targetPos, float speed = 3f)
     {
-        return everMoved; // ← GANTI
+        StartCoroutine(AutoMoveRoutine(targetPos, speed));
     }
-    void ClampToCameraBounds()
+
+    private IEnumerator AutoMoveRoutine(Vector3 targetPos, float speed)
     {
-        if (mainCamera == null) return;
+        canMove = false;
+        isAutoMoving = true;
 
-        // Proyeksi sudut kamera ke bidang horizontal di ketinggian player
-        Plane plane = new Plane(Vector3.up, new Vector3(0f, transform.position.y, 0f));
+        Vector3 targetFlat = new Vector3(targetPos.x, transform.position.y, targetPos.z);
 
-        Vector3[] corners = new Vector3[4];
-        Ray r0 = mainCamera.ViewportPointToRay(new Vector3(0, 0, 0)); // kiri-bawah
-        Ray r1 = mainCamera.ViewportPointToRay(new Vector3(1, 0, 0)); // kanan-bawah
-        Ray r2 = mainCamera.ViewportPointToRay(new Vector3(0, 1, 0)); // kiri-atas
-        Ray r3 = mainCamera.ViewportPointToRay(new Vector3(1, 1, 0)); // kanan-atas
+        while (Vector3.Distance(transform.position, targetFlat) > 0.1f) // toleransi lebih longgar
+        {
+            Vector3 dir = (targetFlat - transform.position).normalized;
 
-        float d;
-        if (plane.Raycast(r0, out d)) corners[0] = r0.GetPoint(d);
-        if (plane.Raycast(r1, out d)) corners[1] = r1.GetPoint(d);
-        if (plane.Raycast(r2, out d)) corners[2] = r2.GetPoint(d);
-        if (plane.Raycast(r3, out d)) corners[3] = r3.GetPoint(d);
+            rb.MovePosition(rb.position + dir * speed * Time.fixedDeltaTime);
 
-        float minX = Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
-        float maxX = Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
-        float minZ = Mathf.Min(corners[0].z, corners[1].z, corners[2].z, corners[3].z);
-        float maxZ = Mathf.Max(corners[0].z, corners[1].z, corners[2].z, corners[3].z);
+            anim.SetBool("isMoving", true);
+            anim.SetFloat("MoveX", dir.x);
+            anim.SetFloat("MoveZ", dir.z);
 
-        Vector3 p = transform.position;
-        p.x = Mathf.Clamp(p.x, minX, maxX);
-        p.z = Mathf.Clamp(p.z, minZ, maxZ);
-        transform.position = p;
+            yield return new WaitForFixedUpdate();
+        }
+
+        transform.position = targetFlat; // snap ke target
+        anim.SetBool("isMoving", false);
+
+        isAutoMoving = false;
+        canMove = true;
+        Debug.Log("AutoMove selesai, sampai di counter");
     }
 }

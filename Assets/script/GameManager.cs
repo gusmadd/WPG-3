@@ -5,71 +5,70 @@ using TMPro;
 
 public class GameManager : MonoBehaviour
 {
-    [Header("Referensi")]
-    public PlayerControler player;  //script player
-    public CameraFollow camFollow; //script camera
-    public GameObject wahana;
-    public GameObject naratorPanel;
-    public TextMeshProUGUI narratorText;
-    private int step = 0;
-    private bool tutorialStarted = false;
+    [Header("Refs")]
+    public PlayerControler player;
+    public CameraFollow camFollow;
+    public DialogManager dialogManager; // 👉 drag di inspector
+
+    [Header("Spots")]
+    public Transform startSpot;
+    public Transform counterSpot;
 
     void Start()
     {
-        naratorPanel.SetActive(false);
-
-        // Lock player dan kamera di awal
         player.canMove = false;
         player.isIntro = true;
-        camFollow.isActive = false;
+        if (camFollow) camFollow.isActive = false;
 
-        StartCoroutine(IntroSequence());
+        StartCoroutine(TutorialSequence());
     }
 
-    private IEnumerator IntroSequence()
+    private IEnumerator TutorialSequence()
     {
-        yield return new WaitForSeconds(2f);  // delay sebelum mulai
+        yield return new WaitForSeconds(0.5f);
 
-        ShowNarator("Gunakan WASD untuk bergerak");
-        player.canMove = true;       // aktifkan player
-        tutorialStarted = true;      // mulai pantau di Update
-    }
+        // 1. Narator
+        bool done = false;
+        dialogManager.ShowDialog("Narrator",
+            "Welcome to Happy Amusement Park, dear visitor!\n" +
+            "It seems like this is the first time you come here.\n" +
+            "Since I'm in a good mood today, I'll tell you how to do things round here~",
+            () => done = true);
+        yield return new WaitUntil(() => done);
 
-    void Update()
-    {
-        if (!tutorialStarted) return;  // ← TAMBAH: jangan proses step sebelum pesan WASD muncul
-        // Step 0 -> player belajar jalan
-        if (step == 0 && player.HasMoved())
+        // 2. Player
+        done = false;
+        dialogManager.ShowDialog("Player", "Wait..! Why am I suddenly here?", () => done = true);
+        yield return new WaitUntil(() => done);
+
+        // 3. Narator "Let's go..."
+        done = false;
+        dialogManager.ShowDialog("Narrator", "See the ticket counter on the right? Let's go there.", () =>
         {
-            step = 1;
-            ShowNarator("Dekati wahana dan tekan E untuk mencoba");
-        }
+            done = true;
+        });
+        yield return new WaitUntil(() => done);
 
-        // Step 1 -> player coba wahana
-        if (step == 1 && player.hasTriedWahana)
-        {
-            step = 2;
-            ShowNarator("Sekarang cari tiket! Tekan ENTER untuk lanjut");
-        }
+        // 👉 Setelah ENTER terakhir, sembunyikan panel & jalankan auto move
+        dialogManager.HideDialog();
 
-        // Step 2 -> player tekan ENTER
-        if (step == 2 && Input.GetKeyDown(KeyCode.Return))
-        {
-            HideNarator();
-            player.isIntro = false;   // player bebas
-            camFollow.isActive = true; // kamera mulai follow
-            step = 3; // selesai tutorial
-        }
+        // Player jalan
+        player.StartAutoMove(counterSpot.position, 2.8f);
+
+        // tunggu sampai selesai jalan
+        yield return new WaitUntil(() => player.IsAutoMoving == false);
+        Debug.Log("Player sampai counter!");
+
+        // 4. Staff
+        done = false;
+        dialogManager.ShowDialog("Counter staff",
+            "You're first.. time.. here..?\nYou.. have to.. solve the puzzle.. to get the ticket...",
+            () => done = true);
+        yield return new WaitUntil(() => done);
+
+        dialogManager.HideDialog();
+        player.canMove = true;
+        if (camFollow) camFollow.isActive = true;
     }
 
-    void ShowNarator(string message)
-    {
-        naratorPanel.SetActive(true);
-        narratorText.text = message; // ← PASTIKAN pakai "narratorText"
-    }
-
-    void HideNarator()
-    {
-        naratorPanel.SetActive(false);
-    }
 }
