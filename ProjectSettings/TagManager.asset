@@ -9,10 +9,10 @@ TagManager:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - wahana
   - Water
   - UI
-  - 
+  - Player
   - 
   - 
   - 
@@ -41,4 +41,7 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: player
+    uniqueID: 1270472779
     locked: 0
